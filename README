@@ -1,1 +1,5 @@
-This file was created by PyCharm 2.6.3 for binding GitHub repository
+An old tool to scan multiple pages and stitch them together into a single
+multi page pdf.
+
+Code is largely in perl.
+Nothing has actually changed in this since around 2005.
