@@ -1,0 +1,83 @@
+#!/usr/bin/perl
+# pdfscan, adapted from post by Christopher Booth, 2004
+# Adapted by Danny Staple, 2006
+# $Id: pdfscan 19 2008-02-02 13:41:32Z dannystaple $
+use strict;
+use FindBin;
+use lib "$FindBin::Bin";
+use Term::ReadKey;
+use File::Copy;
+use Scanner::Basic;
+use Scanner::Tiff;
+
+sub usage()
+{
+  print <<USAGETEXT
+Usage: pdfscan {nameofimage.pdf}\n
+pdfscan will use the default scanner (in a single scanner set up)
+and scan to a PDF file. Warning - these are big memory operations!
+USAGETEXT
+;
+  exit();
+}
+
+sub user_has_more()
+{
+  print "Another page to scan (y/n)?\n";
+  my $key;
+  do {
+    ReadMode 'cbreak';
+    $key = ReadKey(0);
+    ReadMode 'normal';
+    if($key eq 'y' or $key eq 'Y') {
+      return 1;
+    }
+  } while ($key ne 'n' and $key ne 'N');
+  
+  return 0;
+}
+
+my $outputname = $ARGV[0] or usage();
+
+#We need to strip this filename down to components - some of our operations here make 
+#assumptions about where the files Will be.
+my $scannerdevice = Scanner::acquire_scanner();
+
+print "Now scanning $outputname on $scannerdevice\n";
+
+my $count = 0;
+my $cpargs="";
+#Scan each page as a temporary tiff file, placing it on the tiffcp argument list
+do {
+  print "scanning....\n";
+  $count ++;
+  my $filename = "temp-$outputname-$count.tiff";
+  my $err = Scanner::scan_tiff($scannerdevice,$filename);
+  if ($err) { 
+	die("Unable to scan, \n $err");
+  }
+  $cpargs = "$cpargs $filename"
+
+} while(user_has_more() == 1);
+
+if ($count > 1) {
+  print "stitching...\n";
+  print Scanner::stitch_tiffs($cpargs, "temp-$outputname-all.tiff");
+} else {
+  move("temp-$outputname-1.tiff", "temp-$outputname-all.tiff") or print ("Unable to move file $!\n");
+}
+
+#Convert to a B&W tiff as well, and pass through ocr. Filter out non-dictionary 
+
+print "outputting...\n";
+my $err = Scanner::tiff_to_pdf("temp-$outputname-all.tiff", $outputname);
+print $err;
+
+if ($count > 1) {
+	for my $i (1..$count) {
+	  my $filename = "temp-$outputname-$i.tiff";
+	  unlink($filename) or print ("Unable to delete $filename $!\n");
+	}
+}
+unlink("temp-$outputname-all.tiff") or print ("Failed to remove output file $!\n");
+
