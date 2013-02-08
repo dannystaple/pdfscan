@@ -1,5 +1,8 @@
-An old tool to scan multiple pages and stitch them together into a single
-multi page pdf.
+This software is a Perl based command line tool to allow easy processing of
+multi-page paper documents into PDFs on Linux, using the default SANE scanner.
 
-Code is largely in perl.
-Nothing has actually changed in this since around 2005.
+It and its source are available here for projects,
+but the gscan2pdf software and equivalents now perform a superb job
+and are available in all distributions.
+
+As such, pdfscan will no longer be maintained or developed.
